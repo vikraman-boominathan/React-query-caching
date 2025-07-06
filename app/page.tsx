@@ -1,16 +1,29 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPokemonList, getPokemonDetails } from "@/service/service";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Home() {
   const [page, setPage] = useState(1);
   const [selectedPokemon, setSelectedPokemon] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const nextPage = page + 1;
+    queryClient.prefetchQuery({
+      queryKey: ["pokemonList", nextPage],
+      queryFn: () => getPokemonList(nextPage),
+      staleTime: 0,
+      gcTime: 0,
+    });
+  }, [page, queryClient]);
 
   const { data: pokemonList, isLoading: listLoading } = useQuery({
     queryKey: ["pokemonList", page],
     queryFn: () => getPokemonList(page),
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const { data: pokemonDetails, isLoading: detailsLoading } = useQuery({
@@ -18,7 +31,18 @@ export default function Home() {
     queryFn: () =>
       selectedPokemon ? getPokemonDetails(selectedPokemon) : null,
     enabled: !!selectedPokemon,
+    staleTime: 0,
+    gcTime: 0,
   });
+
+  const prefetchPokemonDetails = (pokemonName: string) => {
+    queryClient.prefetchQuery({
+      queryKey: ["pokemonDetails", pokemonName],
+      queryFn: () => getPokemonDetails(pokemonName),
+      staleTime: 0,
+      gcTime: 0,
+    });
+  };
 
   if (listLoading) return <div>Loading Pokemon list...</div>;
 
@@ -33,6 +57,7 @@ export default function Home() {
             <button
               key={pokemon.name}
               onClick={() => setSelectedPokemon(pokemon.name)}
+              onMouseEnter={() => prefetchPokemonDetails(pokemon.name)}
               className={`p-2 border rounded ${
                 selectedPokemon === pokemon.name
                   ? "bg-blue-500 text-white"
