@@ -1,87 +1,89 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getPokemonList, getPokemonDetails } from "@/service/service";
+import { fetchUsers, fetchUserById, User } from "../service/service";
 import { useState } from "react";
 
 export default function Home() {
-  const [page, setPage] = useState(1);
-  const [selectedPokemon, setSelectedPokemon] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
-  const { data: pokemonList, isLoading: listLoading } = useQuery({
-    queryKey: ["pokemonList", page],
-    queryFn: () => getPokemonList(page),
+  // Query for all users
+  const { data: users, isLoading: usersLoading } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => fetchUsers(),
   });
 
-  const { data: pokemonDetails, isLoading: detailsLoading } = useQuery({
-    queryKey: ["pokemonDetails", selectedPokemon],
-    queryFn: () =>
-      selectedPokemon ? getPokemonDetails(selectedPokemon) : null,
-    enabled: !!selectedPokemon,
+  // Query for selected user
+  const { data: selectedUser, isLoading: userLoading } = useQuery({
+    queryKey: ["user", selectedUserId],
+    queryFn: () => (selectedUserId ? fetchUserById(selectedUserId) : null),
+    enabled: !!selectedUserId,
   });
 
-  if (listLoading) return <div>Loading Pokemon list...</div>;
+  if (usersLoading) {
+    return <div className="p-4">Loading users...</div>;
+  }
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Pokemon Explorer</h1>
+    <main className="p-4 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">
+        TanStack Query Background Fetching Demo
+      </h1>
 
-      <div className="mb-4">
-        <h2 className="text-xl mb-2">Pokemon List (Page {page})</h2>
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          {pokemonList?.results.map((pokemon) => (
-            <button
-              key={pokemon.name}
-              onClick={() => setSelectedPokemon(pokemon.name)}
-              className={`p-2 border rounded ${
-                selectedPokemon === pokemon.name
-                  ? "bg-blue-500 text-white"
-                  : "hover:bg-gray-100 hover:text-black cursor-pointer"
-              }`}
-            >
-              {pokemon.name}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-4 py-2 border rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <button
-            onClick={() => setPage((p) => p + 1)}
-            className="px-4 py-2 border rounded"
-          >
-            Next
-          </button>
-        </div>
+      <div className="mb-8">
+        <h2 className="text-gray-600 mb-4">
+          Demo of TanStack Query with background fetching.
+        </h2>
       </div>
 
-      {selectedPokemon && (
-        <div className="mt-4 p-4 border rounded">
-          <h2 className="text-xl mb-2">Pokemon Details</h2>
-          {detailsLoading ? (
-            <div>Loading details...</div>
-          ) : pokemonDetails ? (
-            <div>
-              <h3 className="text-lg font-bold">{pokemonDetails.name}</h3>
-              <img
-                src={pokemonDetails.sprites.front_default}
-                alt={pokemonDetails.name}
-                className="w-32 h-32"
-              />
-              <div>
-                Types:{" "}
-                {pokemonDetails.types.map((t) => t.type.name).join(" & ")}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Users List */}
+        <div className="border rounded-lg p-4">
+          <h2 className="text-xl font-semibold mb-4">Users List</h2>
+          <div className="space-y-2">
+            {users?.map((user: User) => (
+              <div
+                key={user.id}
+                className={`p-3 rounded cursor-pointer transition-colors ${
+                  selectedUserId === user.id
+                    ? "bg-blue-100 hover:bg-blue-200"
+                    : "hover:bg-gray-100"
+                }`}
+                onClick={() => setSelectedUserId(user.id)}
+              >
+                <div className="font-medium">{user.name}</div>
+                <div className="text-sm text-gray-600">{user.email}</div>
               </div>
-            </div>
-          ) : null}
+            ))}
+          </div>
         </div>
-      )}
-    </div>
+
+        {/* Selected User Details */}
+        <div className="border rounded-lg p-4">
+          <h2 className="text-xl font-semibold mb-4">User Details</h2>
+          {selectedUserId ? (
+            userLoading ? (
+              <div>Loading user details...</div>
+            ) : selectedUser ? (
+              <div className="space-y-2">
+                <div>
+                  <span className="font-medium">Name:</span> {selectedUser.name}
+                </div>
+                <div>
+                  <span className="font-medium">Username:</span>{" "}
+                  {selectedUser.username}
+                </div>
+                <div>
+                  <span className="font-medium">Email:</span>{" "}
+                  {selectedUser.email}
+                </div>
+              </div>
+            ) : null
+          ) : (
+            <div className="text-gray-500">Select a user to view details</div>
+          )}
+        </div>
+      </div>
+    </main>
   );
 }

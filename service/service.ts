@@ -1,30 +1,30 @@
 import axios from "axios";
 
-export interface Pokemon {
+export interface User {
   id: number;
   name: string;
-  sprites: {
-    front_default: string;
-  };
-  types: {
-    type: {
-      name: string;
-    };
-  }[];
+  email: string;
+  username: string;
 }
 
-export const getPokemonList = async (
-  page: number = 1
-): Promise<{ results: { name: string }[] }> => {
-  const limit = 10;
-  const offset = (page - 1) * limit;
-  const response = await axios.get(
-    `https://pokeapi.co/api/v2/pokemon?limit=${limit}&offset=${offset}`
-  );
-  return response.data;
+const API_BASE_URL = "https://randomuser.me/api";
+
+export const fetchUsers = async (results: number = 50): Promise<User[]> => {
+  const response = await axios.get(`${API_BASE_URL}/?results=${results}`);
+
+  console.log("fetching users");
+  return response.data.results.map((user: any, index: number) => ({
+    id: index + 1,
+    name: `${user.name.first} ${user.name.last}`,
+    email: user.email,
+    username: user.login.username,
+  }));
 };
 
-export const getPokemonDetails = async (name: string): Promise<Pokemon> => {
-  const response = await axios.get(`https://pokeapi.co/api/v2/pokemon/${name}`);
-  return response.data;
+export const fetchUserById = async (id: number): Promise<User> => {
+  const users = await fetchUsers();
+
+  console.log("fetching user by id", id);
+  console.log(users.find((user) => user.id === id));
+  return users.find((user) => user.id === id) as User;
 };
